@@ -1,3 +1,50 @@
-Program Milk;
+program Milk;
+{$DEFINE SMART}
+{$I srl/srl/misc/smart.scar}
+{$i SRL\SRL.scar}
+{$i REFLECTION\REFLECTION.simba}
+{$i /SRL/misc/PaintSmart.scar}
+const
+  BUILD = 27;
+  SCRIPTNAME = 'MilkDebugger';
+  {↓Constants you can edit are below↓}
+  WORLD = 10; {← Input 0 to load a random world.}
+  MEMBERS = False;
+  SIGNED = True;
+  {↑Constants you can edit are above↑}
+var
+  ScriptTitle : String;
+procedure DefineScriptTitle;
 begin
+  Case Random(4) of
+    0: SCRIPTTITLE := '♠'+SCRIPTNAME+'♠';
+    1: SCRIPTTITLE := '♣'+SCRIPTNAME+'♣';
+    2: SCRIPTTITLE := '♥'+SCRIPTNAME+'♥';
+    3: SCRIPTTITLE := '♦'+SCRIPTNAME+'♦';
+  end;
 end;
+begin
+  DefineScriptTitle;
+  Disguise(ScriptTitle + ' build '+ FloatToStr(BUILD));
+
+  Smart_Server := WORLD;
+  Smart_Members := MEMBERS;
+  Smart_Signed := SIGNED;
+  Smart_SuperDetail := False;
+
+  ClearDebug;
+  SetupSRL;
+  SetupReflection;
+  ClearDebug;
+  While (true) do
+    begin
+      SmartSetDebug(True);
+      PrintOnSmart(['  Home'#39's Essence Miner  ' + Ver], Point(15, 30), 8842476, 131072);
+      WriteLn('The animation is '+IntToStr(GetAnimation));
+      WriteLn(GetMyPos);
+      WriteLn('Item id at slot #1: ' + IntToStr(GetItemIDAt(1))+ '; slot #2: ' + IntToStr(GetItemIDAt(2)));
+      Wait(450);
+      ClearDebug;
+    end;
+
+end.
