@@ -1,19 +1,26 @@
 program Milk;
-{$DEFINE SMART}
-{$I srl/srl/misc/smart.scar}
-{$i SRL\SRL.scar}
-{$i REFLECTION\REFLECTION.simba}
-{$i /SRL/misc/PaintSmart.scar}
+{$DEFINE SMART}{$I SRL/SRL/MISC/Smart.scar}
+{$i SRL/SRL.scar}{$i REFLECTION/Reflection.simba}
+{$i SRL/SRL/MISC/PaintSmart.scar}{$i REFLECTION/CORE/RefPaint.simba}
+{by bevardis + Cstrike,Home}
 const
-  BUILD = 27;
+  BUILD = 47;
   SCRIPTNAME = 'MilkDebugger';
   {↓Constants you can edit are below↓}
   WORLD = 10; {← Input 0 to load a random world.}
   MEMBERS = False;
   SIGNED = True;
+                                                   {       _                                   }
+  DEBUG_ANIMATION = True;                          {      / |________________________________  }
+  DEBUG_LOCATION = True;                           {     / Configure me, constants whispered.| }
+  DEBUG_INVENTORY = True;                          {     \   ________________________________| }
+  DEBUG_COMPASS = True;                            {      \_|                                  }
   {↑Constants you can edit are above↑}
+  P_COLOR = 8842476;
+  P_SHADOW = 131072;
 var
   ScriptTitle : String;
+  ItemInteger : Integer;
 procedure DefineScriptTitle;
 begin
   Case Random(4) of
@@ -22,6 +29,31 @@ begin
     2: SCRIPTTITLE := '♥'+SCRIPTNAME+'♥';
     3: SCRIPTTITLE := '♦'+SCRIPTNAME+'♦';
   end;
+end;
+procedure PrintOnSmart(TP: TStringArray; Placement: TPoint; Colour, Shadow: integer);
+var
+  mx, my, Pic, I, B, H, TPH, Numb: Integer;
+  TTP: TPointArray;
+  Canvas: TCanvas;
+begin
+  SmartSetDebug(True);
+  GetClientDimensions(mx, my);
+  Pic := BitmapFromString(mx, my, '');
+  TPH := High(TP);
+  for I := 0 to TPH do
+  begin
+    TTP := LoadTextTPA(TP[i], SmallChars, H);
+    for B := 0 to High(TTP) do
+    begin
+      Numb := ((I + 1) * 13);
+      FastSetPixel(Pic, TTP[b].x + 1, TTP[b].y + Numb + 1, Shadow);
+      FastSetPixel(Pic, TTP[b].x, TTP[b].y + Numb, Colour);
+    end;
+  end;
+  Canvas := TCANVAS.Create;
+  Canvas.Handle := SmartGetDebugDC;
+  DrawBitmap(Pic, Canvas, Placement.x, Placement.y);
+  FreeBitmap(Pic);
 end;
 begin
   DefineScriptTitle;
@@ -32,17 +64,25 @@ begin
   Smart_Signed := SIGNED;
   Smart_SuperDetail := False;
 
-  ClearDebug;
-  SetupSRL;
-  SetupReflection;
-  ClearDebug;
+
+  ClearDebug;SetupSRL;SetupReflection;ClearDebug;SmartSetDebug(True);EnableSmartCanvas;
+
   While (true) do
     begin
-      SmartSetDebug(True);
-      PrintOnSmart(['  Home'#39's Essence Miner  ' + Ver], Point(15, 30), 8842476, 131072);
-      WriteLn('The animation is '+IntToStr(GetAnimation));
-      WriteLn(GetMyPos);
-      WriteLn('Item id at slot #1: ' + IntToStr(GetItemIDAt(1))+ '; slot #2: ' + IntToStr(GetItemIDAt(2)));
+      //R_DebugNPCs(True);
+      if (DEBUG_ANIMATION) then PrintOnSmart(['Animation #'+IntToStr(GetAnimation)],Point(20,20),P_COLOR,P_SHADOW); {[x]}
+      if (DEBUG_LOCATION) then PrintOnSmart(['Current tile '+IntToStr(GetMyPos.x) +', ' + IntToStr(GetMyPos.y)],Point(20,45),P_COLOR,P_SHADOW); {[x]}
+      if (DEBUG_COMPASS) then PrintOnSmart(['Compass is at ' + FloatToStr(Floor(rs_GetCompassAngleDegrees)) + ' degrees'],Point(580,142),P_COLOR,P_SHADOW); {[x]}
+      if (DEBUG_INVENTORY) then {[x]}
+      begin
+        for ItemInteger := 0 to 28 do
+        begin
+          if (ExistsItem(ItemInteger)) then
+          begin
+            PrintOnSmart([IntToStr(GetItemIDAt(ItemInteger))], ItemCoords(ItemInteger),P_COLOR,P_SHADOW);
+          end;
+        end;
+      end;
       Wait(450);
       ClearDebug;
     end;
