@@ -2,9 +2,9 @@ program Milk;
 {$DEFINE SMART}{$I SRL/SRL/MISC/Smart.scar}
 {$i SRL/SRL.scar}{$i REFLECTION/Reflection.simba}
 {$i SRL/SRL/MISC/PaintSmart.scar}{$i REFLECTION/CORE/RefPaint.simba}
-{by bevardis + Cstrike,Home}
+{by bevardis + Home}
 const
-  BUILD = 47;
+  BUILD = 49;
   SCRIPTNAME = 'MilkDebugger';
   {↓Constants you can edit are below↓}
   WORLD = 10; {← Input 0 to load a random world.}
@@ -12,7 +12,7 @@ const
   SIGNED = True;
                                                    {       _                                   }
   DEBUG_ANIMATION = True;                          {      / |________________________________  }
-  DEBUG_LOCATION = True;                           {     / Configure me, constants whispered.| }
+  DEBUG_LOCATION = True;                           {     / Configure us, constants whispered.| }
   DEBUG_INVENTORY = True;                          {     \   ________________________________| }
   DEBUG_COMPASS = True;                            {      \_|                                  }
   {↑Constants you can edit are above↑}
