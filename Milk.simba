@@ -1,10 +1,10 @@
 program Milk;
 {$DEFINE SMART}{$I SRL/SRL/MISC/Smart.scar}
-{$i SRL/SRL.scar}{$i REFLECTION/Reflection.simba}
-{$i SRL/SRL/MISC/PaintSmart.scar}{$i REFLECTION/CORE/RefPaint.simba}
-{by bevardis + Home}
+{$i SRL/SRL.scar}{$i REFLECTION2/Reflection.simba}
+{$i SRL/SRL/MISC/PaintSmart.scar}
+{by bevardis + Home,Flight,Cstrike}
 const
-  BUILD = 49;
+  BUILD = 50;
   SCRIPTNAME = 'MilkDebugger';
   {↓Constants you can edit are below↓}
   WORLD = 10; {← Input 0 to load a random world.}
@@ -15,6 +15,8 @@ const
   DEBUG_LOCATION = True;                           {     / Configure us, constants whispered.| }
   DEBUG_INVENTORY = True;                          {     \   ________________________________| }
   DEBUG_COMPASS = True;                            {      \_|                                  }
+  DEBUG_NPCS = True;
+  DEBUG_OBJECTS = True;
   {↑Constants you can edit are above↑}
   P_COLOR = 8842476;
   P_SHADOW = 131072;
@@ -30,6 +32,130 @@ begin
     3: SCRIPTTITLE := '♦'+SCRIPTNAME+'♦';
   end;
 end;
+
+procedure R_DrawLine(Clear: Boolean; TP1, TP2: TPoint; Color: TColor);
+{$IFDEF SMART}
+var
+  drawing : TBitmap;
+begin
+
+  drawing := TBitmap.Create;
+  drawing.canvas.handle := SmartGetDebugDC;
+  drawing.canvas.Pen.Color := color;
+
+  if Clear then ClearRSCanvas(drawing.canvas);
+
+  drawing.canvas.moveto(TP1.x,TP1.y);
+  drawing.canvas.LineTo(TP2.x,TP2.y);
+
+
+  try
+    FreeBitmap(drawing);
+  except end;
+
+{$ELSE}
+begin
+{$ENDIF}
+
+end;
+procedure ClearSmartCanvas;
+{$IFDEF SMART}
+var
+  drawing : TBitmap;
+begin
+  drawing := TBitmap.Create;
+  drawing.canvas.handle := SmartGetDebugDC;
+  ClearRSCanvas(drawing.canvas);
+  try
+    FreeBitmap(drawing);
+  except end;
+{$ELSE}
+begin
+{$ENDIF}
+end;
+procedure R_DebugObjects(ObjType: Integer; ClearDebug: Boolean; Color: TColor);
+{$IFDEF SMART}
+var
+  I, X, Y, height, c, Hi: integer;
+  atpa: T2DPointArray;
+  Temp, tpa: tpointarray;
+  MyPos, T, A: TTile;
+  TheObject: TRSObject;
+  ScreenPoint, P: TPoint;
+begin
+  MyPos := R_GetMyPos;
+  c := 1;
+  if ClearDebug then ClearSmartCanvas;
+  for X := MyPos.x - 7 to MyPos.x + 7 do
+    for Y := MyPos.y - 7 to MyPos.y + 7 do
+      if R_TileOnMS(Point(X, Y), 0) then
+      begin
+        ScreenPoint := R_TileToMS(Point(X, Y), 0);
+        TheObject := R_GetObjectAt(Point(X, Y), ObjType);
+        if TheObject = NULL_RSObject then
+          Continue;
+        T := TheObject.Tile;
+        A := Point(X, Y);
+        if (T.x = A.x) and (T.y = A.y) then
+        else
+        begin
+          Inc(c);
+          SetLength(atpa, c);
+          SetLength(atpa[c-1], 2);
+          P := R_TileToMS(T, 0);
+          if PointInBox(P, MSBOX) then
+            R_DrawLine(False, ScreenPoint, P, clSilver);
+        end;
+        Temp := LoadTextTPA('. ' + IntToStr(TheObject.ID), UpChars, height);
+        for i:= 0 to High(temp) do
+        begin
+          Temp[i].x := Temp[i].x + ScreenPoint.x - Height;
+          Temp[i].y := Temp[i].y + ScreenPoint.y - Height;
+        end;
+        TPA := CombineTPA(TPA, Temp);
+      end;
+  SMART_DrawDotsEx(False, TPA, Color);
+{$ELSE}
+begin
+{$ENDIF}
+end;
+procedure R_DebugNPCs(ClearDebug: Boolean);
+{$IFDEF SMART}
+var
+  I, X, Y, height: integer;
+  Temp, tpa: tpointarray;
+  MyPos: TTile;
+  TheNPCArray: TNPCArray;
+  TheNPC: TNPC;
+  ScreenPoint: TPoint;
+begin
+  MyPos := R_GetMyPos;
+  for X := MyPos.x - 7 to MyPos.x + 7 do
+    for Y := MyPos.y - 7 to MyPos.y + 7 do
+      if R_TileOnMS(Point(X, Y), 0) then
+      begin
+        ScreenPoint := R_TileToMS(Point(X, Y), 0);
+        TheNPCArray := R_GetNPCsAt(Point(X, Y), True);
+        if (high(TheNPCArray) < 0) then
+          Continue;
+        TheNPC := TheNPCArray[0]; // Only gets first one
+        if TheNPC = NULL_NPC then
+          Continue;
+        Temp := LoadTextTPA('. ' + ToStr(TheNPC.ID), UpChars, height);
+        for i:= 0 to High(temp) do
+        begin
+          Temp[i].x := Temp[i].x + ScreenPoint.x - Height;
+          Temp[i].y := Temp[i].y + ScreenPoint.y - Height;
+        end;
+        TPA := CombineTPA(TPA, Temp);
+      end;
+  SMART_DrawDotsEx(ClearDebug, TPA, clRed);
+{$ELSE}
+begin
+{$ENDIF}
+end;
+
+
 procedure PrintOnSmart(TP: TStringArray; Placement: TPoint; Colour, Shadow: integer);
 var
   mx, my, Pic, I, B, H, TPH, Numb: Integer;
@@ -65,25 +191,26 @@ begin
   Smart_SuperDetail := False;
 
 
-  ClearDebug;SetupSRL;SetupReflection;ClearDebug;SmartSetDebug(True);EnableSmartCanvas;
+  ClearDebug;SetupSRL;SetupReflection;ClearDebug;SmartSetDebug(True);
 
   While (true) do
     begin
-      //R_DebugNPCs(True);
-      if (DEBUG_ANIMATION) then PrintOnSmart(['Animation #'+IntToStr(GetAnimation)],Point(20,20),P_COLOR,P_SHADOW); {[x]}
-      if (DEBUG_LOCATION) then PrintOnSmart(['Current tile '+IntToStr(GetMyPos.x) +', ' + IntToStr(GetMyPos.y)],Point(20,45),P_COLOR,P_SHADOW); {[x]}
+      if (DEBUG_ANIMATION) then PrintOnSmart(['Animation #'+IntToStr(R_GetAnimation)],Point(20,20),P_COLOR,P_SHADOW); {[x]}
+      if (DEBUG_LOCATION) then PrintOnSmart(['Current tile '+IntToStr(R_GetMyPos.x) +', ' + IntToStr(R_GetMyPos.y)],Point(20,45),P_COLOR,P_SHADOW); {[x]}
       if (DEBUG_COMPASS) then PrintOnSmart(['Compass is at ' + FloatToStr(Floor(rs_GetCompassAngleDegrees)) + ' degrees'],Point(580,142),P_COLOR,P_SHADOW); {[x]}
+      if (DEBUG_NPCS) then R_DebugNPCs(false); {[x]}
+      if (DEBUG_OBJECTS) then R_DebugObjects(1,false, clRed); {[x]}
       if (DEBUG_INVENTORY) then {[x]}
       begin
         for ItemInteger := 0 to 28 do
         begin
           if (ExistsItem(ItemInteger)) then
           begin
-            PrintOnSmart([IntToStr(GetItemIDAt(ItemInteger))], ItemCoords(ItemInteger),P_COLOR,P_SHADOW);
+            PrintOnSmart([IntToStr(R_GetItemIDAt(ItemInteger))], ItemCoords(ItemInteger),P_COLOR,P_SHADOW);
           end;
         end;
       end;
-      Wait(450);
+      Wait(3000);
       ClearDebug;
     end;
 
